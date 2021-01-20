@@ -14,10 +14,12 @@
 </body>
 <script src="https://d3js.org/d3.v6.min.js"></script>
 <script>
+    // Select elemenets with animal image id and change the source image
+    // Function accepts the path to the source image as argument
     function change(imgName){
         d3.select("#animalImg").attr("src", imgName)
-
     }
+    // Select elements with text id and toggle the color between green and red
     function changeColor(){
         let color = d3.select("#text").style("color")
         if(color === "green"){

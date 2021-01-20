@@ -13,18 +13,23 @@
 <script>
     let itemList = d3.select('#itemlist')
     console.log(itemList.node())
+    // Counts the number of list items
     function count(){
         return itemList.selectAll("li").size()
     }
+    // Appends a new list item to the list
     function change1(){
         itemList
             .append("li")
             .text("Item " + count())
     }
+    // Removes all list items
     function change2(){
         itemList.selectAll("li").remove()
     }
+    // Removes last list item
     function change3(){
+        // Note the use of :last-child to select the last list item only
         itemList.select("li:last-child").remove()
     }
 </script>
