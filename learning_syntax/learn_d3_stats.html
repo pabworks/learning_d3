@@ -1,0 +1,45 @@
+<html>
+
+<head></head>
+
+<body>
+    <div id="container"></div>
+</body>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script>
+
+    let container = d3.select("#container")
+
+    // Load the data from Github and execute data pipeline
+    d3.csv("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/dummy.csv")
+        .then(showData)
+
+    // Displays client name and weight
+    function showData(clients) {
+        for (let client of clients) {
+            write(client.Name
+                + ", "
+                + client.Weight)
+        }
+
+        write("----------------")
+
+        // Use d3 to quickly calculate summary statistics
+        let weightSum = d3.sum(clients, c => c.Weight)
+        let weightMean = d3.mean(clients, c => c.Weight)
+        // extent returns an array: [min, max]
+        let weightExtent = d3.extent(clients, c => c.Weight)
+        let weightMin = weightExtent[0]
+        let weightMax = weightExtent[1]
+        write("Sum: " + weightSum)
+        write("Mean: " + weightMean)
+        write("Min: " + weightMin)
+        write("Max: " + weightMax)
+    }
+    // Helper function to write text into a new div
+    function write(text) {
+        container.append("div").text(text)
+    }
+</script>
+
+</html>
