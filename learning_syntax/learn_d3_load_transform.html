@@ -1,0 +1,62 @@
+<html>
+
+<head></head>
+
+<body>
+    <div id="container"></div>
+</body>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script>
+    // Define useful constants
+    const KG_PER_POUND = 0.45
+    const METER_PER_INCH = 0.0254
+
+    let container = d3.select("#container")
+    // Load the data from Github and execute data pipeline
+    d3.csv("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/dummy.csv")
+        .then(executePipeline)
+    // Defines overall data pipeline to execute
+    function executePipeline(clients) {
+        let filteredData = sortAndFilterData(clients)
+        let mappedData = filteredData.map(client => {
+            client.BMI = calculateBMI(client)
+            return client
+        })
+        showData(mappedData)
+        // Calculate mean BMI: sum using reduce then divide by # of elements
+        let avgBMI = mappedData.reduce(
+            (acc, client) => { return acc + client.BMI },
+            0, // accumulator starts at zero
+        ) / mappedData.length
+        write("-------------")
+        write("Average BMI: " + avgBMI)
+    }
+    // Sorts clients by name and filters out those with Weights >= 180 lbs
+    function sortAndFilterData(clients) {
+        clients.sort((a, b) => {
+            return d3.ascending(a.Name, b.Name)
+        })
+        let filteredData = clients.filter(a => { return a.Weight < 180 })
+        return filteredData
+    }
+    // Displays client name and BMI
+    function showData(clients) {
+        for (let client of clients) {
+            write(client.Name
+                + ", "
+                + client.BMI)
+        }
+    }
+    // Helper function to write text into a new div
+    function write(text) {
+        container.append("div").text(text)
+    }
+    // Helper function to calculate BMI
+    function calculateBMI(client) {
+        let Weight_kg = client.Weight * KG_PER_POUND
+        let Height_m = client.Height * METER_PER_INCH
+        return Weight_kg / Height_m / Height_m
+    }
+</script>
+
+</html>
