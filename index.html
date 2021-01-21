@@ -2,7 +2,7 @@
 <!-- saved from url=(0338)https://d3c33hcgiwev3.cloudfront.net/_PEQk3ziEeiqbAqxMNypOA_fd149dc07ce211e8a7eff530c81b5bec_index.html?Expires=1611273600&Signature=KnE9ktOdiJDeQqFU62GgpC2TFo8TuQ9dKWybtnEtT-xmEGrRrkzVnZoFEenjqn5gdJq4ejLePQBvhAm-NMbwEkHGWUazcFkREEmc~jDAfUSS57sppVADfyf1402GWZInxx0EPMYN2FqyZTb2uZ-CHMxWbh6XBNOcU40Ge-0HOos_&Key-Pair-Id=APKAJLTNE6QMUY6HBC5A -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
     <style>
-        body {
+        body { 
             font-family: Helvetica, Arial, sans-serif
         }
 
@@ -15,11 +15,14 @@
         svg {
             border: solid 1px black;
         }
-        
+
         .mainView {
             display: flex;
         }
     </style>
+
+<script src="https://d3js.org/d3.v6.min.js"></script>
+
 </head>
 
 <body data-new-gr-c-s-check-loaded="14.991.0" data-gr-ext-installed="">
@@ -36,4 +39,55 @@
     </div>
 
 
-</body></html>
+</body>
+
+<script>
+    let store = {}
+
+    loadData().then(showData)
+
+    function loadData() {
+        let promise = d3.csv("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/routes.csv")
+        return promise.then(routes => {
+            store.routes = routes;
+            return store;
+        })
+    }
+
+    function groupByAirline(data) {
+        // Iterate over each route
+        let result = data.reduce((result, d) => {
+            // Extract existing entry, or, if no such entry exists, create an empty one
+            let currentData = result[d.AirlineID] || {
+                "AirlineID": d.AirlineID,
+                "AirlineName": d.AirlineName,
+                "Count": 0
+            }
+            currentData.Count += 1;
+
+            result[d.AirlineID] = currentData;
+            
+            return result;
+        }, {})
+        // Convert dictionary to a list of dictionaries
+        result = Object.keys(result).map(key => result[key])
+        // Sort data in descending order of count
+        result.sort((a, b) => b.Count - a.Count)
+
+        return result
+    }
+
+    function showData() {
+        // Get the routes from store variable
+        let routes = store.routes
+
+        // Compute the number of routes per airline
+        let airlines = groupByAirline(routes)
+        console.log(airlines)
+    }
+
+
+    
+</script>
+
+</html>
