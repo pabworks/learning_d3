@@ -1,0 +1,67 @@
+<html>
+    <head></head>
+    <body>
+        <div id="container"></div>
+        <svg id="svg-container" height="250" width="350">
+            <g id="body" style="transform:translate(50px,0px)"></g>
+            <g id="yaxis"></g>
+            <g id="xaxis"></g>
+
+        </svg>
+    </body>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script>
+    let container = d3.select("#container");
+    let body = d3.select("#body")
+    let svgContainer = d3.select("#svg-container");
+
+    d3.csv("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/dummy.csv")
+            .then(showData)
+
+    function write(text) {
+        container.append("div").text(text)
+    }
+
+    function showData(clients) {
+        // Define axis size in pixels
+        let axisRange = [0, 250]
+        // Calculate the range of weights in the clients (starting at 0)
+        maxWeight = d3.max(clients, d => d.Weight)
+        let domainRange = [0, maxWeight]
+        // Define scaling function for axis
+        let widthScale = d3.scaleLinear()
+            .domain(domainRange)
+            .range(axisRange)
+
+        // Create bar chart using SVG
+        let positionScale = d3.scaleBand()
+            .range([0,200])
+            .domain(clients.map(d => d.Name))
+            .padding(0.1)
+
+        let svgJoin = body.selectAll("rect")
+            .data(clients)
+        
+        svgJoin.enter()
+            .append("rect")
+            .attr("fill", "green")
+            .attr("stroke", "white")
+            .attr("width", d => widthScale(d.Weight))
+            .attr("height", positionScale.bandwidth())
+            .attr("y", d => positionScale(d.Name))
+        
+        let xAxis = d3.axisBottom(widthScale)
+            .ticks(5)
+            .tickFormat(d => d + " lb")
+        d3.select("#xaxis")
+            .attr("transform", "translate(50,200)")
+            .call(xAxis)
+        
+        let yAxis = d3.axisLeft(positionScale)
+        d3.select("#yaxis")
+            .attr("transform", "translate(50, 0)")
+            .call(yAxis)
+    }
+
+</script>
+</html>
