@@ -1,8 +1,9 @@
+<html>
 
-<!-- saved from url=(0338)https://d3c33hcgiwev3.cloudfront.net/_PEQk3ziEeiqbAqxMNypOA_fd149dc07ce211e8a7eff530c81b5bec_index.html?Expires=1611273600&Signature=KnE9ktOdiJDeQqFU62GgpC2TFo8TuQ9dKWybtnEtT-xmEGrRrkzVnZoFEenjqn5gdJq4ejLePQBvhAm-NMbwEkHGWUazcFkREEmc~jDAfUSS57sppVADfyf1402GWZInxx0EPMYN2FqyZTb2uZ-CHMxWbh6XBNOcU40Ge-0HOos_&Key-Pair-Id=APKAJLTNE6QMUY6HBC5A -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
     <style>
-        body { 
+        body {
             font-family: Helvetica, Arial, sans-serif
         }
 
@@ -21,11 +22,11 @@
         }
     </style>
 
-<script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
 
 </head>
 
-<body data-new-gr-c-s-check-loaded="14.991.0" data-gr-ext-installed="">
+<body>
     <h1>Airlines Routes</h1>
     <div class="mainView">
         <div>
@@ -47,13 +48,18 @@
     loadData().then(showData)
 
     function loadData() {
-        let promise = d3.csv("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/routes.csv")
-        return promise.then(routes => {
-            store.routes = routes;
+        let promise = Promise.all([
+            d3.csv("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/routes.csv"),
+            d3.json("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/countries.geo.json"),
+        ])
+        return promise.then(datasets => {
+            store.routes = datasets[0];
+            store.geoJSON = datasets[1];
             return store;
         })
     }
 
+    // DATA AGGREGATION
     function groupByAirline(data) {
         // Iterate over each route
         let result = data.reduce((result, d) => {
@@ -66,7 +72,7 @@
             currentData.Count += 1;
 
             result[d.AirlineID] = currentData;
-            
+
             return result;
         }, {})
         // Convert dictionary to a list of dictionaries
@@ -76,7 +82,45 @@
 
         return result
     }
+    function groupByAirport(data) {
+        //We use reduce to transform a list into a object where each key points to an aiport. This way makes it easy to check if is the first time we are seeing the airport.
+        let result = data.reduce((result, d) => {
+            //The || sign in the line below means that in case the first option is anything that Javascript consider false (this insclude undefined, null and 0), the second option will be used. Here if result[d.DestAirportID] is false, it means that this is the first time we are seeing the airport, so we will create a new one (second part after ||)
 
+            let currentDest = result[d.DestAirportID] || {
+                "AirportID": d.DestAirportID,
+                "Airport": d.DestAirport,
+                "Latitude": +d.DestLatitude,
+                "Longitude": +d.DestLongitude,
+                "City": d.DestCity,
+                "Country": d.DestCountry,
+                "Count": 0
+            }
+            currentDest.Count += 1
+            result[d.DestAirportID] = currentDest
+
+            //After doing for the destination airport, we also update the airport the airplane is departing from.
+            let currentSource = result[d.SourceAirportID] || {
+                "AirportID": d.SourceAirportID,
+                "Airport": d.SourceAirport,
+                "Latitude": +d.SourceLatitude,
+                "Longitude": +d.SourceLongitude,
+                "City": d.SourceCity,
+                "Country": d.SourceCountry,
+                "Count": 0
+            }
+            currentSource.Count += 1
+            result[d.SourceAirportID] = currentSource
+
+            return result
+        }, {})
+
+        //We map the keys to the actual ariorts, this is an way to transform the object we got in the previous step into a list.
+        result = Object.keys(result).map(key => result[key])
+        return result
+    }
+
+    // DATA DISPLAY
     function showData() {
         // Get the routes from store variable
         let routes = store.routes
@@ -86,8 +130,14 @@
         console.log(airlines)
         // Draw airlines barchart
         drawAirlinesChart(airlines)
+        // Draw map
+        drawMap(store.geoJSON)
+        // Annotate map
+        let airports = groupByAirport(store.routes);
+        drawAirports(airports)
     }
 
+    // GRAPH FUNCTIONS
     function drawAirlinesChart(airlines) {
         let config = getAirlinesChartConfig();
         let scales = getAirlinesChartScales(airlines, config)
@@ -101,7 +151,7 @@
         let margin = {
             top: 10,
             bottom: 50,
-            left: 130,
+            left: 130, // Note that this has been manually tweaked to fit airline names
             right: 10
         }
         // The body is the area that will be occupied by the bars
@@ -118,30 +168,30 @@
     }
 
     function getAirlinesChartScales(airlines, config) {
-        let { bodyWidth, bodyHeight} = config;
+        let { bodyWidth, bodyHeight } = config;
         let maximumCount = d3.max(airlines.map(d => d.Count))
 
         let xScale = d3.scaleLinear()
             .range([0, bodyWidth])
             .domain([0, maximumCount])
-        
+
         let yScale = d3.scaleBand()
             .range([0, bodyHeight])
             .domain(airlines.map(d => d.AirlineName))
             .padding(0.2)
-        
+
         return { xScale, yScale }
     }
 
     function drawBarsAirlinesChart(airlines, scales, config) {
-        let {margin, container} = config; // this is equivalent to 'let margin = config.margin; let container = config.container'
-        let {xScale, yScale} = scales
-        let body= container.append("g")
+        let { margin, container } = config; // this is equivalent to 'let margin = config.margin; let container = config.container'
+        let { xScale, yScale } = scales
+        let body = container.append("g")
             .style("transform", `translate(${margin.left}px,${margin.top}px)`)
-        
+
         let bars = body.selectAll(".bar")
             .data(airlines)
-        
+
         // Adding a rect tag for each airline
         bars.enter()
             .append("rect")
@@ -150,21 +200,69 @@
             .attr("width", d => xScale(d.Count))
             .attr("fill", "#2a5599")
     }
-    
+
     function drawAxesAirlinesChart(airlines, scales, config) {
-        let {xScale, yScale} = scales
-        let {container, margin, height} = config
+        let { xScale, yScale } = scales
+        let { container, margin, height } = config
         let xAxis = d3.axisBottom(xScale).ticks(5)
 
         container.append("g")
             .style("transform", `translate(${margin.left}px,${height - margin.bottom}px)`)
             .call(xAxis)
-        
+
         let yAxis = d3.axisLeft(yScale)
 
         container.append("g")
             .style("transform", `translate(${margin.left}px,${margin.top}px`)
             .call(yAxis)
+    }
+    // BASE MAP FUNCTIONS
+    function drawMap(geoJson) {
+        let config = getMapConfig()
+        let projection = getMapProjection(config)
+        drawBaseMap(config.container, geoJson.features, projection)
+    }
+    function getMapConfig() {
+        let width = 600;
+        let height = 400;
+        let container = d3.select("#Map")
+            .attr("width", width)
+            .attr("height", height)
+        return { width, height, container }
+    }
+    function getMapProjection(config) {
+        let {width, height} = config;
+        let projection = d3.geoMercator()
+        projection.scale(97)
+            .translate([width / 2, height / 2 + 20])
+        store.mapProjection = projection;
+        return projection
+    }
+    function drawBaseMap(container, countries, projection) {
+        let path = d3.geoPath()
+            .projection(projection)
+
+        container.selectAll("path")
+            .data(countries)
+            .enter().append("path")
+            .attr("d", path)
+            .attr("stroke", "#ccc")
+            .attr("fill", "#eee")
+    }
+
+    // MAP ANNOTATION FUNCTIONS
+    function drawAirports(airports) {
+        let config = getMapConfig()
+        let projection = getMapProjection(config)
+        let container = config.container
+
+        let circles = container.selectAll("circle")
+            .data(airports)
+            .enter().append("circle")
+            .attr("r", 1)
+            .attr("cx", d => projection([d.Longitude, d.Latitude])[0])
+            .attr("cy", d => projection([d.Longitude, d.Latitude])[1])
+            .attr("fill", "#2a5599")
     }
 </script>
 
