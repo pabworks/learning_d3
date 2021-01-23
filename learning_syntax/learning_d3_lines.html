@@ -1,0 +1,62 @@
+<html>
+    <head>
+        <style>
+            .line {
+                fill: none;
+                stroke: blue;
+            }
+        </style>
+    </head>
+    <body>
+        <svg id="container" height="250" width="500">
+            <g id="body" style="transform:translate(50px,0px)"></g>
+
+        </svg>
+    </body>
+
+
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script>
+    let body = d3.select("#body")
+    d3.csv("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/prices.csv")
+        .then(showData)
+
+    function showData(data) {
+        let bodyHeight = 200
+        let bodyWidth = 400
+
+        data = data.map(d =>  ({
+            date: new Date(d.Date), // converts string to date
+            price: +d.Petrol // converts string to numeric
+        }))
+        console.log(data)
+        let maxValue = d3.max(data, d => d.price)
+        console.log(maxValue)
+
+        let yScale = d3.scaleLinear()
+            .range([bodyHeight, 0])
+            .domain([0, maxValue])
+        body.append("g")
+            .call(d3.axisLeft(yScale))
+        
+        let xScale = d3.scaleTime()
+            .domain(d3.extent(data, d => d.date))
+            .range([0, bodyWidth])
+        body.append("g")
+            .attr("transform", "translate(0," + bodyHeight + ")")
+            .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat("%Y")))
+        
+        valueLine = d3.line()
+            .x(d => xScale(d.date))
+            .y(d => yScale(d.price))
+            .defined(d => !!d.price ) // determine if field is defined or not, and should be shown
+
+        body.append("path")
+            .datum(data) // use datum since only 1 path containing all information
+            .attr("d", valueLine)
+            .attr("class", "line") // use CSS to style
+
+            
+    }
+</script>
+</html>
