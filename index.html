@@ -199,6 +199,16 @@
             .attr("y", d => yScale(d.AirlineName))
             .attr("width", d => xScale(d.Count))
             .attr("fill", "#2a5599")
+            .on("mouseenter", function(e, d) {
+                let chosenAirline = d.AirlineID
+                console.log(chosenAirline)
+                drawRoutes(chosenAirline)
+                this.style.fill = "red"
+            })
+            .on("mouseleave", function(e, d) {
+                drawRoutes(null) // remove routes viz
+                this.style.fill = "#2a5599"
+            })
     }
 
     function drawAxesAirlinesChart(airlines, scales, config) {
@@ -242,12 +252,12 @@
         let path = d3.geoPath()
             .projection(projection)
 
-        container.selectAll("path")
+        container.append("g").selectAll("path")
             .data(countries)
             .enter().append("path")
+            .attr("fill", "none")
             .attr("d", path)
             .attr("stroke", "#ccc")
-            .attr("fill", "#eee")
     }
 
     // MAP ANNOTATION FUNCTIONS
@@ -263,6 +273,27 @@
             .attr("cx", d => projection([d.Longitude, d.Latitude])[0])
             .attr("cy", d => projection([d.Longitude, d.Latitude])[1])
             .attr("fill", "#2a5599")
+    }
+
+    // ROUTES FUNCTIONS
+    function drawRoutes(airlineID) {
+        let routes = store.routes
+        let projection = store.mapProjection
+        let container = d3.select("#Map")
+        let selectedRoutes = routes.filter(d => d.AirlineID === airlineID)
+
+        let bindedData = container.selectAll("line")
+            .data(selectedRoutes, d => d.ID) // second parameter tells D3 how to identify individual routes
+        
+        bindedData.enter().append("line")
+            .attr("x1", d => projection([d.SourceLongitude, d.SourceLatitude])[0])
+            .attr("y1", d => projection([d.SourceLongitude, d.SourceLatitude])[1])
+            .attr("x2", d => projection([d.DestLongitude, d.DestLatitude])[0])
+            .attr("y2", d => projection([d.DestLongitude, d.DestLatitude])[1])
+            .attr("stroke", "red")
+            .attr("opacity", 0.1)
+        
+        bindedData.exit().remove()
     }
 </script>
 
