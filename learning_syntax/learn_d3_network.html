@@ -1,0 +1,70 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <svg id="container" height="500" width="500">
+            <g id="body" style="transform:translate(50px,0px)"></g>
+
+        </svg>
+    </body>
+
+
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script>
+    let body = d3.select("#body")
+    d3.json("https://raw.githubusercontent.com/pabworks/learning_d3/main/data/network.json")
+        .then(showData)
+
+    function showData(data) {
+        let bodyHeight = 400
+        let bodyWidth = 400
+        
+        // Use force simulation to correctly space network nodes and edges
+        let simulation  =  d3.forceSimulation()
+            .force("link", d3.forceLink().id(d => d.id))
+            .force("charge", d3.forceManyBody())
+            .force("center", d3.forceCenter(bodyWidth/2, bodyHeight/2))
+        // The combination of forces balancing is what makes a good network diagram
+        
+        createElements(data)
+        simulation.nodes(data.nodes)
+            .on("tick", updateElements) // Run this function for every update
+        simulation.force("link").links(data.links)
+    }
+
+    function createElements(data) {
+        let nodes = body.append("g")
+            .attr("class", "nodes")
+            .selectAll("circles")
+            .data(data.nodes)
+            .enter()
+            .append("circle")
+                .attr("r", 5)
+                .attr("fill", "black")
+        
+        let links = body.append("g")
+            .attr("class", "link")
+            .selectAll("line")
+            .data(data.links)
+            .enter()
+            .append("line")
+            .attr("stroke", "black")
+    }
+
+    function updateElements() {
+        // Update node positions
+        d3.select(".nodes")
+            .selectAll("circle")
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+        
+        // Update edge positions
+        d3.select(".link")
+            .selectAll("line")
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y)
+    }
+</script>
+</html>
